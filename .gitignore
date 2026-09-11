@@ -31,3 +31,6 @@ Thumbs.db
 
 # Runtime output
 *.log
+
+# Paper crawler downloads and generated reports
+tools/paper_crawler/output/
