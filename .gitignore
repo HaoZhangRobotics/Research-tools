@@ -34,3 +34,6 @@ Thumbs.db
 
 # Paper crawler downloads and generated reports
 tools/paper_crawler/output/
+
+# Conference crawler downloads and generated reports
+tools/conference_crawler/output/
