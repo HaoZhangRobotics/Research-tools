@@ -12,13 +12,15 @@
   - **B 站、小红书、X**：可整理稿件并打开官方入口；当前版本未接入直发 API，需在平台侧完成发布。
   - 每次直发都需要用户明确确认；YouTube 默认隐私状态为私享。
 
-启动统一工作台：
+**Mac 用户可双击项目目录里的 `启动ResearchTools.command`**。第一次启动会自动准备本项目专用的 Python 和依赖，之后双击即可打开工作台。
+
+也可以在终端运行：
 
 ```bash
-streamlit run tools/app.py
+./启动ResearchTools.command
 ```
 
-需要 Python 3.10 或更新版本。完整安装和授权步骤见[工作台说明](tools/README.md)及各工具 README。
+首次启动需要联网下载运行环境。完整说明见[工作台说明](tools/README.md)及各工具 README。
 
 ## 项目方向
 

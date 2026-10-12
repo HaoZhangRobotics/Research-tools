@@ -4,18 +4,13 @@
 
 ## 启动
 
-在仓库根目录运行：
+Mac 上直接双击仓库根目录的 `启动ResearchTools.command`，首次会自动准备 Python 和项目依赖。或在终端运行：
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r tools/paper_crawler/requirements.txt
-python -m pip install -r tools/conference_crawler/requirements.txt
-python -m pip install -r tools/video_publisher/requirements.txt
-streamlit run tools/app.py
+./启动ResearchTools.command
 ```
 
-Python 3.10 或更新版本。也可以继续按各工具 README 中的命令单独启动。
+启动器使用项目内独立的 arm64 Python 环境，不依赖系统 Python 或 Anaconda。首次运行需联网下载环境；旧的架构不匹配 `.venv` 会保留为备份。也可以手动安装 Python 3.10 或更新版本，再运行 `streamlit run tools/app.py`。
 
 ## 视频发布器
 
