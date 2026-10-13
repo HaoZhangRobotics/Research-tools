@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from streamlit.testing.v1 import AppTest
-from crawler import Client, DEFAULT_URL
+from conference_crawler.crawler import Client, DEFAULT_URL
 
 APP = Path(__file__).resolve().parents[1] / 'app.py'
 INDEX = '<div class="content"><a href="p001.html">Test paper</a></div>'

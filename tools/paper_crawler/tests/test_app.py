@@ -4,9 +4,9 @@ import sys
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from streamlit.testing.v1 import AppTest
-from crawler import Blocked, Paper
+from paper_crawler.crawler import Blocked, Paper
 
 APP = Path(__file__).resolve().parents[1] / 'app.py'
 
@@ -28,7 +28,7 @@ class AppTests(unittest.TestCase):
         app.text_input[1].set_value('robot')
         app.checkbox[2].uncheck()
         papers = [Paper('a:1', 'Robot learning', 2024), Paper('a:2', 'Biology', 2024), Paper('a:3', 'Robot old', 2020)]
-        with patch('crawler.ScholarClient.publications', return_value=iter(papers)), patch('crawler.ScholarClient.detail'):
+        with patch('paper_crawler.crawler.ScholarClient.publications', return_value=iter(papers)), patch('paper_crawler.crawler.ScholarClient.detail'):
             app.button[1].click().run(timeout=10)
         self.assertFalse(app.exception)
         selected, directory, meta = app.session_state['result']
@@ -44,7 +44,7 @@ class AppTests(unittest.TestCase):
         def interrupted(self, author_id):
             yield Paper('a:1', 'Saved paper', 2024)
             raise Blocked('验证码')
-        with patch('crawler.ScholarClient.publications', interrupted):
+        with patch('paper_crawler.crawler.ScholarClient.publications', interrupted):
             app.button[1].click().run(timeout=10)
         self.assertFalse(app.exception)
         selected, directory, meta = app.session_state['result']

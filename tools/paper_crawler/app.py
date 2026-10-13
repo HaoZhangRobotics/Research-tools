@@ -2,13 +2,18 @@
 from datetime import datetime
 from pathlib import Path
 import re
+import sys
 import uuid
 import zipfile
 
 import streamlit as st
 
-from crawler import (Blocked, CrawlError, ScholarClient, download_pdf,
-                     export_results, matches, scholar_id)
+TOOLS_DIR = Path(__file__).resolve().parent.parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from paper_crawler.crawler import (Blocked, CrawlError, ScholarClient, download_pdf,
+                                  export_results, matches, scholar_id)
 
 st.set_page_config(page_title="科研论文采集器", page_icon="📚", layout="wide")
 st.title("📚 科研论文采集器")

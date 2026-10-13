@@ -1,10 +1,15 @@
 """Run: streamlit run tools/conference_crawler/app.py"""
 from pathlib import Path
+import sys
 import zipfile
 
 import streamlit as st
 
-from crawler import DEFAULT_URL, crawl
+TOOLS_DIR = Path(__file__).resolve().parent.parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from conference_crawler.crawler import DEFAULT_URL, crawl
 
 st.set_page_config(page_title="会议论文采集器", page_icon="📑", layout="wide")
 st.title("📑 会议论文采集器")

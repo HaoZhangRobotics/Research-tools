@@ -3,11 +3,15 @@ from datetime import datetime
 import json
 from pathlib import Path
 import re
+import sys
 import tempfile
 
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
+TOOLS_DIR = ROOT.parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
 PLATFORMS = {
     "抖音": ("https://open.douyin.com/", "已接入官方上传与发布 API；需应用通过审核并在本机配置获批的 video.create 用户授权。"),
     "哔哩哔哩": ("https://open.bilibili.com/doc/main", "开放平台提供稿件分发能力，需开发者认证及对应应用权限；此工具暂未接入官方投稿 API。"),
@@ -77,7 +81,7 @@ if post:
                 handle.write(st.session_state.video_bytes)
                 temp_path = handle.name
             try:
-                from youtube import upload_video
+                from video_publisher.youtube import upload_video
                 with st.spinner("正在通过 YouTube 官方 API 上传…"):
                     video_id = upload_video(temp_path, post["title"], post["description"], post["tags"], post["youtube_privacy"])
                 st.success(f"上传成功，Video ID：{video_id}")
@@ -104,7 +108,7 @@ if post:
                 handle.write(st.session_state.video_bytes)
                 temp_path = handle.name
             try:
-                from douyin import publish_video
+                from video_publisher.douyin import publish_video
                 with st.spinner("正在通过抖音开放平台上传并提交审核…"):
                     item_id = publish_video(temp_path, post["title"], dy_token, dy_open_id)
                 st.success(f"抖音已接收发布请求：{item_id}。平台审核期间可能只有自己可见。")
