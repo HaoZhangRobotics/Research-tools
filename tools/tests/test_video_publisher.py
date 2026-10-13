@@ -44,14 +44,14 @@ class VideoPublisherTests(unittest.TestCase):
             source.write_bytes(b"test")
             next(x for x in app.text_input if x.label.startswith("本机视频路径")).set_value(str(source))
             next(x for x in app.text_area if x.label == "视频标题").set_value(long_title)
-            app.multiselect[0].select("YouTube")
+            next(x for x in app.checkbox if x.label == "YouTube").check()
             with patch.object(Path, "write_bytes"):
                 next(x for x in app.button if x.label == "检查稿件").click().run()
         self.assertFalse(app.exception)
         self.assertEqual(next(x for x in app.text_area if x.label == "视频标题").value, long_title)
         self.assertEqual(app.session_state["video_post"]["title"], long_title)
         self.assertTrue(any("标题已完整保留" in x.value for x in app.warning))
-        self.assertTrue(next(x for x in app.button if x.label == "发布到 YouTube").disabled)
+        self.assertTrue(next(x for x in app.button if x.label == "发布到勾选的平台").disabled)
         with patch.object(youtube, "authorize_youtube") as auth:
             with self.assertRaises(ValueError):
                 youtube.upload_video("test.mp4", long_title, "Description", [], "private")
@@ -65,7 +65,7 @@ class VideoPublisherTests(unittest.TestCase):
             app = self.launch()
             next(x for x in app.text_input if x.label.startswith("本机视频路径")).set_value(str(source))
             next(x for x in app.text_area if x.label == "视频标题").set_value("Local research video")
-            app.multiselect[0].select("YouTube")
+            next(x for x in app.checkbox if x.label == "YouTube").check()
             with patch.object(Path, "write_bytes"):
                 next(x for x in app.button if x.label == "检查稿件").click().run()
             self.assertFalse(app.exception)

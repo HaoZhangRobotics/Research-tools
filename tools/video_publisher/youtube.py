@@ -2,6 +2,9 @@
 from pathlib import Path
 import json
 import os
+from urllib.parse import unquote, urlparse
+
+from video_publisher.network import proxy_url
 
 
 def _save_private(path: Path, text: str) -> None:
@@ -35,11 +38,17 @@ def authorize_youtube():
     if not client_file.exists():
         raise RuntimeError("请将 Google Cloud OAuth 桌面应用凭据保存为 tools/video_publisher/client_secret.json")
     scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+    import requests
+    session = requests.Session()
+    proxy = proxy_url()
+    if proxy:
+        session.proxies.update({"http": proxy, "https": proxy})
     credentials = Credentials.from_authorized_user_file(str(token_file), scopes) if token_file.exists() else None
     if credentials and credentials.expired and credentials.refresh_token:
-        credentials.refresh(Request())
+        credentials.refresh(Request(session=session))
     if not credentials or not credentials.valid:
         flow = InstalledAppFlow.from_client_secrets_file(str(client_file), scopes)
+        flow.oauth2session.proxies.update(session.proxies)
         credentials = flow.run_local_server(port=0, open_browser=True, timeout_seconds=180)
     _save_private(token_file, credentials.to_json())
     return credentials
@@ -52,7 +61,17 @@ def upload_video(video_path: str, title: str, description: str, tags: list[str],
     from googleapiclient.http import MediaFileUpload
 
     credentials = authorize_youtube()
-    youtube = build("youtube", "v3", credentials=credentials)
+    proxy = proxy_url()
+    if proxy:
+        import httplib2
+        import socks
+        from google_auth_httplib2 import AuthorizedHttp
+        parsed = urlparse(proxy)
+        proxy_info = httplib2.ProxyInfo(socks.PROXY_TYPE_HTTP, parsed.hostname, parsed.port or 80,
+                                      proxy_user=unquote(parsed.username or ""), proxy_pass=unquote(parsed.password or ""))
+        youtube = build("youtube", "v3", http=AuthorizedHttp(credentials, http=httplib2.Http(proxy_info=proxy_info)))
+    else:
+        youtube = build("youtube", "v3", credentials=credentials)
     snippet = {"title": title, "description": description, "categoryId": "28"}
     if tags:
         snippet["tags"] = tags

@@ -1,58 +1,80 @@
 # 科研视频发布
 
-标题输入框允许完整粘贴长文本，不会因超过 100 字符而整段拒绝。YouTube 的 100 字符限制在发布前检查，超长标题会保留在预览中并提示编辑。
+五个平台直接显示为勾选框，默认不选。只向勾选的平台发送视频和稿件。发布前需要检查预览并勾选确认；统一发布按钮会逐个平台处理，分别显示提交结果。
 
-本地界面可选择视频文件、撰写标题和简介、添加标签、勾选平台并生成稿件 JSON。抖音和 YouTube 提供官方 API 直发适配器；B 站、小红书和 X 可生成统一稿件并打开官方入口。每次 API 发布都需要在界面预览后明确勾选确认。
+## 当前实现和验证范围
 
-预览里的标题和文案都有复制按钮。文件选择控件的本地限制为 2 GB；这是本工具设置，不代表各个平台的上传上限。大视频可以直接填写本机路径，从磁盘传给平台，不必先通过浏览器读入内存。抖音当前适配器只支持 128 MB 以内的普通上传；更大的文件需接入分片上传或在平台后台发布。
+| 平台 | 发布方式 | 首次设置 |
+|---|---|---|
+| 抖音 | 默认本机浏览器；可选官方 API | 专用浏览器里登录；API 模式才需要 token/open_id |
+| B站 | 本机 Chrome 自动上传、填写标题/简介/标签、选择科学科普分区并投稿 | 专用浏览器里登录 |
+| 小红书 | 本机 Chrome 自动上传视频、填写标题和文案、点击发布 | 专用浏览器里登录 |
+| X | 本机 Chrome 自动添加视频、填写文字、点击发帖 | 专用浏览器里登录 |
+| YouTube | 官方 Data API 上传 | Google Cloud 桌面应用 OAuth 凭据及频道账号授权 |
+
+浏览器适配器通过了隔离模拟页面上的上传、填写、提交及回执测试；尚未使用用户账号在上述真实平台完成发帖验收。页面改版、登录失效、验证码、封面或分区必填项均可能导致停止，不能保证未经实测的账号立刻可用。程序会在提交前停止无法识别的流程，保存本机错误截图，供继续适配；不会绕过验证码或平台权限。
 
 ## 启动
 
-在仓库根目录运行：
+Mac 用户双击仓库根目录的 `启动ResearchTools.command`。启动器已安装浏览器发布需要的 Playwright 和 YouTube 依赖。浏览器适配器使用已安装的 Google Chrome；当前浏览器账号隔离与锁机制针对 macOS。
 
-```bash
-python -m pip install -r tools/video_publisher/requirements.txt
-streamlit run tools/app.py
-```
-
-如需 YouTube 直发，再安装可选依赖：
+手动安装：
 
 ```bash
 python -m pip install -r tools/video_publisher/requirements-youtube.txt
+streamlit run tools/app.py
 ```
 
-## YouTube 设置
+## 浏览器登录与选择平台
 
-1. 在 Google Cloud 项目中启用 YouTube Data API v3，配置 OAuth 同意屏幕；若为测试应用，把自己的 Google 账号加入测试用户。创建类型为“桌面应用”的 OAuth 客户端并下载 JSON。
-2. 展开界面的“账号授权与连接”，导入下载的 JSON 并点击“保存 YouTube 应用凭据”。文件存为 `tools/video_publisher/client_secret.json`（已加入忽略规则，不会提交到 Git）。
-3. 点击“登录并授权 YouTube”，在浏览器选择自己的频道账号并确认。此步骤不会上传视频；授权 token 存在本地 `youtube_token.json`，同样已忽略。
-4. 发布默认设为 `private`。未审核的 API 项目上传可能被限制为私享视频；公开发布资格受 Google 项目审核影响。
+1. 展开“登录与授权”，点击对应平台的登录按钮。
+2. 在弹出的专用 Chrome 窗口里正常登录或扫码。它与平时的 Chrome 账号环境分开；不会复制你平时浏览器的 Cookie。
+3. 登录完成后关闭这个专用窗口，回到工作台。会话存在本机 `output/browser_profiles/`，发布时再次检查是否可用。目录存在不等于已登录成功。
+4. 选择视频，填写稿件，勾选本次要发布的平台。可在“各平台稿件与发布方式”中给 B站、小红书、YouTube 单独设标题，给 X 单独设文案。
+5. 点击“检查稿件”，核对目标平台、实际 X 文案和各平台专用标题，勾选确认，再点击“发布到勾选的平台”。
 
-官方接口要求 `youtube.upload` OAuth scope。见 [YouTube 视频上传 API](https://developers.google.com/youtube/v3/docs/videos/insert)。
+X 文案留空时使用通用标题＋标签，不会把长篇简介自动截断后发送。B站和小红书使用通用简介及标签。各平台的字符、格式、大小和时长要求仍适用；平台字段无法完整接收文本时停止该平台任务。
 
-## 抖音设置
+## YouTube 授权
 
-1. 在[抖音开放平台](https://open.douyin.com/)注册应用，申请视频发布能力及 `video.create` 权限，并完成用户授权。
-   获批应用须按 OAuth 流程获取用户授权码，再使用应用的 client_key、client_secret 和授权码调用[获取 access_token 接口](https://open.douyin.com/platform/resource/docs/openapi/account-permission/get-access-token)，取得用户 access_token 和 open_id。本工具尚未实现抖音的登录回调或 token 刷新。
-2. 在仓库根目录创建 `.streamlit/secrets.toml`（该文件不要提交），填入授权得到的 access token 和对应账号 open_id：
+1. 在 Google Cloud 项目中启用 YouTube Data API v3，配置 OAuth 同意屏幕；若为测试应用，把自己的 Google 账号加入测试用户。创建“桌面应用”OAuth 客户端，下载 JSON。
+2. 在“登录与授权”导入 JSON，点击“保存 YouTube 应用凭据”。
+3. 点击“登录并授权 YouTube”，在 Google 页面选择频道账号并确认。此步骤只授权，不上传视频。
+4. 使用默认私享或自行选择隐私状态；实际公开发布资格受平台项目审核要求影响。
 
-   ```toml
-   douyin_access_token = "你的用户授权 access_token"
-   douyin_open_id = "对应账号的 open_id"
-   ```
+应用凭据和 token 存在本机 `client_secret.json` 与 `youtube_token.json`，文件权限设为仅当前用户读写，并已加入 Git 忽略规则。见 [YouTube 官方上传 API](https://developers.google.com/youtube/v3/docs/videos/insert)。
 
-3. 选择抖音并点击“发布到抖音”。当前直传入口限定在 128 MB 以内；平台收到后还会进行内容审核。
+## 抖音官方 API（可选）
 
-抖音官方文档说明上传与发布均需申请 `video.create` 权限和用户授权；代用户发布时，界面需让用户清楚感知每次操作。见[上传视频](https://open.douyin.com/platform/resource/docs/openapi/video-management/douyin/create/upload)和[创建视频](https://open.douyin.com/platform/resource/docs/openapi/video-management/douyin/create/create-video)。
+默认浏览器模式不需要填写 token 示例。只有选“官方 API”时，才需要在抖音开放平台获批 `video.create` 权限，完成 OAuth 用户授权后将真实的 access_token、open_id 保存到仓库根目录的 `.streamlit/secrets.toml`。界面中的示例字符串只是占位文字。
 
-## 其他平台
+普通 API 上传模式当前限制在 128 MB 以内；更大文件请选浏览器模式，仍受平台自身限制。见[抖音上传 API](https://open.douyin.com/platform/resource/docs/openapi/video-management/douyin/create/upload)及[用户 token 获取接口](https://open.douyin.com/platform/resource/docs/openapi/account-permission/get-access-token)。
 
-- **哔哩哔哩**：开放平台文档说明开发者认证通过后可申请稿件分发能力；本工具尚未实现投稿适配器。使用官方[开放平台](https://open.bilibili.com/doc/main)完成发布。
-- **小红书**：当前核对到的开放平台 API 参考主要列出授权等接口，未确认面向普通创作者的通用视频投稿 API，因此只生成稿件并打开[开放平台](https://open.xiaohongshu.com/)。
-- **X**：视频媒体上传与发帖需要相应 X API 项目访问权限；尚未接入媒体上传，本工具打开[X 开发者文档](https://developer.x.com/en/docs)。
+## 视频大小、复制和网络
 
-这些平台权限和 API 会随平台政策变化。直发按钮只会对明确配置并选中的平台发送；未接入的平台不会被伪装成已发布。
+- 标题可以完整粘贴；粘贴换行在检查稿件时合并为一行。YouTube 的 100 字符限制在上传前检查。
+- 标题和文案预览都有复制按钮。
+- 浏览器选文件控件上限为 2 GB，这是本工具设置。大视频可直接填写本机路径，避免复制到浏览器内存。
+- 本机视频不会被删除；通过浏览器选入的视频产生的临时副本会在本次队列结束后删除。
+- 浏览器任务和 YouTube 网络请求优先使用已有 HTTP(S) 代理环境变量，macOS 上其次读取当前系统 HTTP 代理。不会修改系统网络设置；代理不可用会正常报错，不会关闭 TLS 校验。
 
-## 本地数据和依赖
+## 结果记录与重试
 
-稿件副本保存在 `tools/video_publisher/output/`，浏览器上传的暂存视频会在请求结束后删除；填写本机路径时不复制或删除原视频。凭据与授权 token 不应提交。基础依赖为 Streamlit 和 requests；YouTube 客户端为可选依赖，Mac 一键启动器已自动安装。
+本地 `output/publish_jobs/` 持续记录各平台状态：
+
+- **已提交**：取得平台投稿回执、视频 ID 或页面明确成功提示；可能还需平台审核。
+- **失败**：明确的输入、登录或提交前流程错误，可修复后再次点击。
+- **待核查**：已经点击提交、请求结果不明或连接中断。必须先到平台确认是否已收到，程序不会自动重复发送。
+- **中断待核查**：队列在请求过程中退出。保留记录并阻止自动重复发送。
+
+一个平台失败不影响其他勾选的平台继续处理。同一稿件再次点击会跳过已提交或结果不明的平台。更换账号后复用同一稿件的行为还未实现独立频道识别，不应据此认为可以自动发布到第二个账号。
+
+所有浏览器会话、稿件、截图和回执均在忽略的 `output/` 下，不提交 Cookie、token 或视频。
+
+## 本地验证
+
+```bash
+python -m unittest discover -s tools/tests
+```
+
+浏览器测试拦截全部请求并提供本地模拟页面，不访问真实平台、不登录账号、不发布内容。这些测试证明流程与回执判断，不替代真实平台验收。

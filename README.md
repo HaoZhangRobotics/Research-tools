@@ -7,10 +7,10 @@
 - **统一可视化工作台**：从侧边栏选择作者论文采集、会议论文采集或视频发布，无需每次手动挑脚本。
 - **作者论文采集**：查找 Google Scholar 作者，按年份和关键词筛选论文，汇总元数据并下载可获取的 PDF。
 - **会议论文采集**：从 RSS 等会议目录批量采集论文标题、作者、摘要、BibTeX 和公开 PDF，支持重试失败详情和跳过已下载文件。
-- **科研视频发布**：上传视频，填写标题、简介和标签，选择抖音、B 站、小红书、X 或 YouTube，预览后导出稿件 JSON。
-  - **抖音、YouTube**：已提供官方 API 直发适配器；分别需要抖音开放平台审核与用户授权、Google Cloud OAuth 凭据。
-  - **B 站、小红书、X**：可整理稿件并打开官方入口；当前版本未接入直发 API，需在平台侧完成发布。
-  - 每次直发都需要用户明确确认；YouTube 默认隐私状态为私享。
+- **科研视频发布**：五个平台直接显示为勾选框，默认不选；检查视频与各平台稿件后，统一发布到勾选的平台，并分别显示提交结果。
+  - **抖音、B站、小红书、X**：新增本机专用 Chrome 发布适配器，手动登录后自动上传、填写稿件并提交。平台页面流程尚需在用户账号上实测，验证码须由用户完成。
+  - **YouTube**：使用官方 API 和 Google OAuth。抖音也保留可选的官方 API 模式。
+  - 结果不明时标为“待核查”，不会把点击提交当作成功，也不会自动重复提交。YouTube 默认设为私享。
 
 **Mac 用户可双击项目目录里的 `启动ResearchTools.command`**。第一次启动会自动准备本项目专用的 Python 和依赖，之后双击即可打开工作台。
 
@@ -45,7 +45,7 @@
 | [Research Tools 工作台](tools/README.md) | 统一选择和启动下方各工具 | `streamlit run tools/app.py` |
 | [科研论文采集器](tools/paper_crawler/README.md) | 按作者 Google Scholar 主页采集论文，支持年份、领域关键词筛选、信息汇总和 PDF 下载 | `streamlit run tools/paper_crawler/app.py` |
 | [会议论文采集器](tools/conference_crawler/README.md) | 按 RSS 等会议目录全量采集论文、摘要、BibTeX 和 PDF，支持失败重试与跳过已有文件 | `streamlit run tools/conference_crawler/app.py` |
-| [科研视频发布](tools/video_publisher/README.md) | 整理视频稿件；配置官方授权后可直发抖音和 YouTube，并为其他平台生成稿件 | 见工具说明 |
+| [科研视频发布](tools/video_publisher/README.md) | 勾选五个平台，登录或授权后统一发布；浏览器发布流程尚待账号实测 | 见工具说明 |
 
 ## Bibliographic catalogs
 
