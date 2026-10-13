@@ -46,6 +46,8 @@ def authorize_youtube():
 
 
 def upload_video(video_path: str, title: str, description: str, tags: list[str], privacy: str) -> str:
+    if len(title) > 100:
+        raise ValueError("YouTube 标题不能超过 100 个字符，请缩短标题后重试。")
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
 

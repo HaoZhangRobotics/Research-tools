@@ -60,7 +60,7 @@ with st.expander("账号授权与连接（首次使用先设置）"):
 with st.form("video_post_form"):
     video = st.file_uploader("视频文件（本地界面上限 2 GB）", type=["mp4", "mov", "m4v", "webm", "avi"], max_upload_size=2048)
     local_path = st.text_input("本机视频路径（可选，大视频推荐）", placeholder="/Users/zhanghao/Desktop/科研视频.mp4", help="填入路径时优先使用本机文件，不经浏览器复制进内存，也不受界面的 2 GB 上传限制；平台自身限制仍适用。")
-    title = st.text_input("视频标题", max_chars=100)
+    title = st.text_area("视频标题", height=70, key="publisher_title", help="可以直接粘贴完整标题。粘贴中的换行会在检查稿件时合并为一行，平台长度限制会在发布前检查。")
     description = st.text_area("视频简介 / 文案", height=180, max_chars=5000)
     tag_text = st.text_input("标签（逗号分隔）", placeholder="robotics, research, 科研")
     selected = st.multiselect("发布平台", list(PLATFORMS), default=[])
@@ -71,6 +71,7 @@ with st.form("video_post_form"):
 ready = st.checkbox("我已检查视频、标题、文案和目标平台；点击发布会向所选且已配置的平台发送内容。")
 
 if submitted:
+    title = " ".join(line.strip() for line in title.splitlines() if line.strip())
     errors = []
     source = None
     if local_path.strip():
@@ -117,10 +118,13 @@ if post:
 
     if "YouTube" in post["platforms"]:
         st.markdown("#### YouTube")
+        title_ok = len(post["title"]) <= 100
+        if not title_ok:
+            st.warning(f"标题已完整保留（{len(post['title'])} 个字符）。YouTube 最多允许 100 个字符，请修改上方标题并重新点击“检查稿件”后再发布。")
         client_ready = (ROOT / "client_secret.json").exists()
         if not client_ready:
             st.info("尚未配置 OAuth 凭据。按 README 配好 Google Cloud 桌面应用后，这里即可授权并直传。")
-        if st.button("发布到 YouTube", disabled=(not ready or not client_ready), type="primary"):
+        if st.button("发布到 YouTube", disabled=(not ready or not client_ready or not title_ok), type="primary"):
             try:
                 from video_publisher.youtube import upload_video
                 with video_path(st.session_state.video_name, st.session_state.video_bytes, st.session_state.get("video_local_path", "")) as temp_path, st.spinner("正在通过 YouTube 官方 API 上传…"):

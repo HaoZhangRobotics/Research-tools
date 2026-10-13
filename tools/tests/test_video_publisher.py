@@ -36,6 +36,27 @@ class VideoPublisherTests(unittest.TestCase):
         self.assertIn("科研视频标题", snippets)
         self.assertIn("可复制的科研视频文案", snippets)
 
+    def test_long_title_is_preserved_instead_of_rejected(self):
+        app = self.launch()
+        long_title = "科研标题" * 30
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "test.mp4"
+            source.write_bytes(b"test")
+            next(x for x in app.text_input if x.label.startswith("本机视频路径")).set_value(str(source))
+            next(x for x in app.text_area if x.label == "视频标题").set_value(long_title)
+            app.multiselect[0].select("YouTube")
+            with patch.object(Path, "write_bytes"):
+                next(x for x in app.button if x.label == "检查稿件").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(next(x for x in app.text_area if x.label == "视频标题").value, long_title)
+        self.assertEqual(app.session_state["video_post"]["title"], long_title)
+        self.assertTrue(any("标题已完整保留" in x.value for x in app.warning))
+        self.assertTrue(next(x for x in app.button if x.label == "发布到 YouTube").disabled)
+        with patch.object(youtube, "authorize_youtube") as auth:
+            with self.assertRaises(ValueError):
+                youtube.upload_video("test.mp4", long_title, "Description", [], "private")
+            auth.assert_not_called()
+
     def test_large_local_video_does_not_copy_into_session_memory(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "large.mp4"
@@ -43,7 +64,7 @@ class VideoPublisherTests(unittest.TestCase):
                 handle.truncate(201 * 1024**2)
             app = self.launch()
             next(x for x in app.text_input if x.label.startswith("本机视频路径")).set_value(str(source))
-            next(x for x in app.text_input if x.label == "视频标题").set_value("Local research video")
+            next(x for x in app.text_area if x.label == "视频标题").set_value("Local research video")
             app.multiselect[0].select("YouTube")
             with patch.object(Path, "write_bytes"):
                 next(x for x in app.button if x.label == "检查稿件").click().run()
