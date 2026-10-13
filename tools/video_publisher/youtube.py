@@ -1,14 +1,33 @@
 """Optional official YouTube Data API upload integration."""
 from pathlib import Path
+import json
+import os
 
 
-def upload_video(video_path: str, title: str, description: str, tags: list[str], privacy: str) -> str:
+def _save_private(path: Path, text: str) -> None:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as handle:
+        handle.write(text)
+    path.chmod(0o600)
+
+
+def save_client_config(raw: bytes) -> None:
+    config = json.loads(raw)
+    installed = config.get("installed", {})
+    if not installed.get("client_id") or not installed.get("client_secret"):
+        raise ValueError("请选择 Google Cloud 下载的 OAuth 桌面应用 JSON，API key 或 Web 应用凭据不适用。")
+    if installed.get("auth_uri") != "https://accounts.google.com/o/oauth2/auth" or installed.get("token_uri") != "https://oauth2.googleapis.com/token":
+        raise ValueError("凭据中的 Google OAuth 地址不正确，请重新从 Google Cloud 下载。")
+    root = Path(__file__).resolve().parent
+    if (root / "youtube_token.json").exists():
+        raise ValueError("已有 YouTube 授权记录；请先断开旧授权，再更换应用凭据。")
+    _save_private(root / "client_secret.json", json.dumps(config))
+
+
+def authorize_youtube():
     try:
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
         from google_auth_oauthlib.flow import InstalledAppFlow
-        from googleapiclient.discovery import build
-        from googleapiclient.http import MediaFileUpload
     except ImportError as exc:
         raise RuntimeError("缺少 YouTube 可选依赖，请安装 video_publisher/requirements-youtube.txt") from exc
     root = Path(__file__).resolve().parent
@@ -21,8 +40,16 @@ def upload_video(video_path: str, title: str, description: str, tags: list[str],
         credentials.refresh(Request())
     if not credentials or not credentials.valid:
         flow = InstalledAppFlow.from_client_secrets_file(str(client_file), scopes)
-        credentials = flow.run_local_server(port=0, open_browser=True)
-        token_file.write_text(credentials.to_json(), encoding="utf-8")
+        credentials = flow.run_local_server(port=0, open_browser=True, timeout_seconds=180)
+    _save_private(token_file, credentials.to_json())
+    return credentials
+
+
+def upload_video(video_path: str, title: str, description: str, tags: list[str], privacy: str) -> str:
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+
+    credentials = authorize_youtube()
     youtube = build("youtube", "v3", credentials=credentials)
     snippet = {"title": title, "description": description, "categoryId": "28"}
     if tags:
