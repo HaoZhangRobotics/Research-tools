@@ -19,6 +19,11 @@ PLATFORMS = {
     "X": ("https://developer.x.com/en/docs", "视频发布需要获批的 X API 访问权限及媒体上传授权；此工具暂未接入 X 媒体上传。"),
     "YouTube": ("https://studio.youtube.com/", "支持 YouTube Data API 官方上传；需配置 Google Cloud OAuth 桌面应用凭据。"),
 }
+PLATFORM_LABELS = {"哔哩哔哩": "B站（哔哩哔哩）"}
+
+
+def platform_label(name):
+    return PLATFORM_LABELS.get(name, name)
 
 st.set_page_config(page_title="科研视频发布", page_icon="🎬", layout="wide")
 st.title("🎬 科研视频发布")
@@ -63,7 +68,8 @@ with st.form("video_post_form"):
     title = st.text_area("视频标题", height=70, key="publisher_title", help="可以直接粘贴完整标题。粘贴中的换行会在检查稿件时合并为一行，平台长度限制会在发布前检查。")
     description = st.text_area("视频简介 / 文案", height=180, max_chars=5000)
     tag_text = st.text_input("标签（逗号分隔）", placeholder="robotics, research, 科研")
-    selected = st.multiselect("发布平台", list(PLATFORMS), default=[])
+    selected = st.multiselect("发布平台", list(PLATFORMS), default=[], format_func=platform_label,
+                              placeholder="选择抖音、B站、小红书、X 或 YouTube")
     privacy = st.selectbox("YouTube 隐私状态", ["private", "unlisted", "public"], index=0,
                            help="默认为私享；公开发布前请先确认频道和视频内容。")
     submitted = st.form_submit_button("检查稿件", type="primary")
@@ -105,7 +111,7 @@ if post:
     st.markdown("**标题**")
     st.code(post["title"], language=None, wrap_lines=True)
     st.write(f"**视频：** {post['video_filename']} · {post['video_size_bytes'] / 1024**2:.1f} MB")
-    st.write(f"**目标：** {'、'.join(post['platforms'])}")
+    st.write(f"**目标：** {'、'.join(platform_label(name) for name in post['platforms'])}")
     st.markdown("**文案**")
     st.code(post["description"], language=None, wrap_lines=True, height=200)
     payload = json.dumps(post, ensure_ascii=False, indent=2).encode("utf-8")
@@ -166,5 +172,6 @@ if post:
                                st.session_state.video_name, key="download_original_video")
         for name in manual:
             url, note = PLATFORMS[name]
-            st.write(f"**{name}** — {note}")
-            st.link_button(f"打开 {name} 官方入口", url, key=f"platform_{name}")
+            display_name = platform_label(name)
+            st.write(f"**{display_name}** — {note}")
+            st.link_button(f"打开 {display_name} 官方入口", url, key=f"platform_{name}")
